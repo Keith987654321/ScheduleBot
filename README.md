@@ -8,7 +8,7 @@ Schedule bot - бот для просмотра и управлением рас
  
 ## Установка и запуск
 1. Создайте бд postgresSQL по схеме из файла scheme.sql
-    psql -U <user> -d <database> -f schema.sql
+    - psql -U <user> -d <database> -f schema.sql
 
     или с помощью Docker: 
     docker run --name postgres -e POSTGRES_USER=<user> -e POSTGRES_PASSWORD=<pass> -e POSTGRES_DB=<name> -p 5432:5432 -d postgres:17.6
