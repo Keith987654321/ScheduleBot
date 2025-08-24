@@ -19,11 +19,11 @@ Schedule bot - бот для просмотра и управлением рас
 
 4. Запустите бота с помощью команды go run main.go -user=<username> -pass=<password> -name=<database_name> -ssl=<enable/disable> -token=<telegram_token>
 
-    Флаг <user> - имя пользователя бд
-    Флаг <pass> - пароль бд
-    Флаг <name> - имя бд
-    Флаг <ssl> - режим ssl (enable / disable)
-    Флаг <token> - токен вашего бота в тг, который вы получили на 3 шаге
+    - Флаг user - имя пользователя бд
+    - Флаг pass - пароль бд
+    - Флаг name - имя бд
+    - Флаг ssl - режим ssl (enable / disable)
+    - Флаг token - токен вашего бота в тг, который вы получили на 3 шаге
 
     Пример Команды:
     go run main.go -user=postgres -pass=secret -name=schedule_db -ssl=disable -token=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
