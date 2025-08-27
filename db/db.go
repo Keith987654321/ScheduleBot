@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Keith987654321/schedule-tg-bot/models"
@@ -10,8 +11,8 @@ import (
 
 var DB *sqlx.DB
 
-func Connect(user, pass, db, sslmode string) {
-	dsn := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", user, pass, db, sslmode)
+func Connect(user, host, port, pass, db, sslmode string) {
+	dsn := fmt.Sprintf("user=%s host=%s port=%s password=%s dbname=%s sslmode=%s", user, host, port, pass, db, sslmode)
 	var err error
 	DB, err = sqlx.Connect("postgres", dsn)
 	if err != nil {
@@ -45,25 +46,32 @@ func CheckUserInfo(telegramID int64, firstName, userName string) error {
 	return nil
 }
 
-func GetScheduleForDay(day int) ([]models.ScheduleItem, error) {
+func AddUserToSubgroup(telegramID int64, subgroup int) error {
+	_, err := DB.Exec("UPDATE users SET subgroup = $1 WHERE telegram_id = $2", subgroup, telegramID)
+	return err
+}
+
+func ChangeSubgroup(telegramID int64, newSubgroup int) error {
+	_, err := DB.Exec("UPDATE users SET subgroup = $1 where telegram_id = $2", newSubgroup, telegramID)
+	return err
+}
+
+func GetScheduleForDay(day, subgroup int) ([]models.ScheduleItem, error) {
 	var items []models.ScheduleItem
-	err := DB.Select(&items, "SELECT * FROM schedule WHERE day_of_week = $1 ORDER BY pair_number", day)
+	err := DB.Select(&items, "SELECT * FROM schedule WHERE day_of_week = $1 AND (subgroup = $2 OR subgroup = 0) ORDER BY pair_number", day, subgroup)
 	return items, err
 }
 
-func GetLastPairNumber(pairs []models.ScheduleItem) int {
-	maxNumber := 0
-	for _, pair := range pairs {
-		if pair.PairNumber > maxNumber {
-			maxNumber = pair.PairNumber
-		}
-	}
-	return maxNumber
+func SuggestChange(userID int, day, pair int, newSubject string, classroom int, subgroup int) error {
+	_, err := DB.Exec("INSERT INTO suggestions (user_id, day_of_week, pair_number, new_subject, classroom, subgroup) VALUES ($1, $2, $3, $4, $5, $6)",
+		userID, day, pair, newSubject, classroom, subgroup)
+	return err
 }
 
-func SuggestChange(userID int, day, pair int, newSubject string, classroom int) error {
-	_, err := DB.Exec("INSERT INTO suggestions (user_id, day_of_week, pair_number, new_subject, classroom) VALUES ($1, $2, $3, $4, $5)", userID, day, pair, newSubject, classroom)
-	return err
+func GetTeachers() ([]models.Teacher, error) {
+	var teachers []models.Teacher
+	err := DB.Select(&teachers, "SELECT * FROM teachers ORDER BY id")
+	return teachers, err
 }
 
 func GetPendingSuggestions() ([]models.Suggestion, error) {
@@ -72,24 +80,38 @@ func GetPendingSuggestions() ([]models.Suggestion, error) {
 	return suggs, err
 }
 
+func UpdateSchedule(sugg models.Suggestion) error {
+	var err error
+	var pairs []models.ScheduleItem
+	if err := DB.Select(&pairs, "SELECT * FROM schedule WHERE day_of_week = $1 AND pair_number = $2 AND (subgroup = 0 OR subgroup = 1 OR subgroup = 2) ORDER BY subgroup",
+		sugg.DayOfWeek, sugg.PairNumber); err != nil {
+		return err
+	}
+
+	if len(pairs) == 0 {
+		_, err = DB.Exec("INSERT INTO schedule (day_of_week, pair_number, subject, classroom, subgroup) values ($1, $2, $3, $4, $5)", sugg.DayOfWeek, sugg.PairNumber,
+			sugg.NewSubject, sugg.Classroom, sugg.Subgroup)
+	} else if len(pairs) >= 1 && sugg.Subgroup == pairs[0].Subgroup {
+		_, err = DB.Exec("UPDATE schedule SET subject = $1, classroom = $2 WHERE day_of_week = $3 AND pair_number = $4 AND subgroup = $5",
+			sugg.NewSubject, sugg.Classroom, sugg.DayOfWeek, sugg.PairNumber, sugg.Subgroup)
+	} else if len(pairs) == 1 && sugg.Subgroup != pairs[0].Subgroup && pairs[0].Subgroup != 0 && sugg.Subgroup != 0 {
+		_, err = DB.Exec("INSERT INTO schedule (day_of_week, pair_number, subject, classroom, subgroup) values ($1, $2, $3, $4, $5)", sugg.DayOfWeek, sugg.PairNumber,
+			sugg.NewSubject, sugg.Classroom, sugg.Subgroup)
+	} else {
+		return errors.New("Already exist at this pair time")
+	}
+
+	return err
+}
+
 func ApproveSuggestion(suggID int) error {
 	var sugg models.Suggestion
 	err := DB.Get(&sugg, "SELECT * FROM suggestions WHERE id = $1", suggID)
 	if err != nil {
 		return err
 	}
-	// Updating schedule
-	var pairs []models.ScheduleItem
-	if err := DB.Select(&pairs, "SELECT * FROM schedule WHERE day_of_week = $1 AND pair_number = $2", sugg.DayOfWeek, sugg.PairNumber); err != nil {
-		return err
-	}
 
-	if len(pairs) == 0 {
-		_, err = DB.Exec("INSERT INTO schedule (day_of_week, pair_number, subject, classroom) values ($1, $2, $3, $4)", sugg.DayOfWeek, sugg.PairNumber,
-			sugg.NewSubject, sugg.Classroom)
-	} else {
-		_, err = DB.Exec("UPDATE schedule SET subject = $1 WHERE day_of_week = $2 AND pair_number = $3", sugg.NewSubject, sugg.DayOfWeek, sugg.PairNumber)
-	}
+	err = UpdateSchedule(sugg)
 
 	if err != nil {
 		return err
@@ -118,23 +140,26 @@ func RejectSuggestion(suggID int) error {
 	return err
 }
 
-func EditSchedule(day, pair int, newSubject string, classroom int) error {
+func EditSchedule(day, pair int, newSubject string, classroom, subgroup int) error {
 	var pairs []models.ScheduleItem
-	if err := DB.Select(&pairs, "SELECT * FROM schedule WHERE day_of_week = $1 AND pair_number = $2", day, pair); err != nil {
+	if err := DB.Select(&pairs, "SELECT * FROM schedule WHERE day_of_week = $1 AND pair_number = $2 AND (subgroup = $3 OR subgroup = 0 OR subgroup = 1 OR subgroup = 2)",
+		day, pair, subgroup); err != nil {
 		return err
 	}
 
-	if len(pairs) == 0 {
-		_, err := DB.Exec("INSERT INTO schedule (day_of_week, pair_number, subject, classroom) values ($1, $2, $3, $4)", day, pair, newSubject, classroom)
-		return err
-	}
+	err := UpdateSchedule(models.Suggestion{
+		DayOfWeek:  day,
+		PairNumber: pair,
+		NewSubject: newSubject,
+		Classroom:  classroom,
+		Subgroup:   subgroup,
+	})
 
-	_, err := DB.Exec("UPDATE schedule SET subject = $1 WHERE day_of_week = $2 AND pair_number = $3", newSubject, day, pair)
 	return err
 }
 
-func DeleteSubject(day, pair int) error {
-	_, err := DB.Exec("DELETE FROM schedule WHERE day_of_week = $1 AND pair_number = $2", day, pair)
+func DeleteSubject(day, pair, subgroup int) error {
+	_, err := DB.Exec("DELETE FROM schedule WHERE day_of_week = $1 AND pair_number = $2 AND subgroup = $3", day, pair, subgroup)
 	return err
 }
 

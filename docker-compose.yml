@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    container_name: bot-container 
+    restart: unless-stopped
+    env_file:
+      - .env 
+    depends_on:
+      - db
+    
+  db:
+    image: postgres:15
+    container_name: bot-db-container 
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data 
+
+volumes:
+  db_data:
