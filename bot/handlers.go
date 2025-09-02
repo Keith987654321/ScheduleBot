@@ -406,10 +406,15 @@ func sprintSchedule(day int, items []models.ScheduleItem) string {
 		for _, item := range items {
 			if item.PairNumber > lastPairNumber+1 {
 				for i := lastPairNumber + 1; i < item.PairNumber; i++ {
-					sb.WriteString(fmt.Sprintf("%d: Окно (%s) | Каб. %d\n", i, pairTime[i], item.Classroom))
+					sb.WriteString(fmt.Sprintf("%d: Окно (%s)\n", i, pairTime[i]))
 				}
 			}
-			sb.WriteString(fmt.Sprintf("%d: %s (%s) | Каб. %d\n", item.PairNumber, item.Subject, pairTime[item.PairNumber], item.Classroom))
+			if item.Classroom != 0 {
+				sb.WriteString(fmt.Sprintf("%d: %s (%s) | Каб. %d\n", item.PairNumber, item.Subject, pairTime[item.PairNumber], item.Classroom))
+			} else {
+				sb.WriteString(fmt.Sprintf("%d: %s (%s)\n", item.PairNumber, item.Subject, pairTime[item.PairNumber]))
+			}
+
 			lastPairNumber = item.PairNumber
 		}
 	}
