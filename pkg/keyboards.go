@@ -9,22 +9,27 @@ import (
 
 var (
 	subgroups = [2]int{1, 2}
-	days      = [7]string{"Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"}
+	days      = [6]string{"Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"}
+	Commands  = map[string]string{
+		"Сегодня": "/today", "Завтра": "/tomorrow", "Расписание": "/schedule",
+		"Преподы": "/teachers", "Предложить": "/suggest", "Сменить подгруппу": "/change_group",
+		"Одобрить": "/approve", "Отклонить": "/reject", "Редактировать": "/edit", "Удалить": "/delete",
+	}
 )
 
 func CreateMainMenu(role string) tgbotapi.ReplyKeyboardMarkup {
 	var buttons [][]tgbotapi.KeyboardButton
 	if role == "admin" {
 		buttons = [][]tgbotapi.KeyboardButton{
-			{tgbotapi.NewKeyboardButton("/schedule"), tgbotapi.NewKeyboardButton("/today")},
-			{tgbotapi.NewKeyboardButton("/teachers"), tgbotapi.NewKeyboardButton("/change_group")},
-			{tgbotapi.NewKeyboardButton("/approve"), tgbotapi.NewKeyboardButton("/reject")},
-			{tgbotapi.NewKeyboardButton("/edit"), tgbotapi.NewKeyboardButton("/delete")},
+			{tgbotapi.NewKeyboardButton("Сегодня"), tgbotapi.NewKeyboardButton("Завтра")},
+			{tgbotapi.NewKeyboardButton("Преподы"), tgbotapi.NewKeyboardButton("Расписание"), tgbotapi.NewKeyboardButton("Сменить подгруппу")},
+			{tgbotapi.NewKeyboardButton("Одобрить"), tgbotapi.NewKeyboardButton("Отклонить")},
+			{tgbotapi.NewKeyboardButton("Редактировать"), tgbotapi.NewKeyboardButton("Удалить")},
 		}
 	} else {
 		buttons = [][]tgbotapi.KeyboardButton{
-			{tgbotapi.NewKeyboardButton("/today")}, {tgbotapi.NewKeyboardButton("/schedule"), tgbotapi.NewKeyboardButton("/teachers")},
-			{tgbotapi.NewKeyboardButton("/suggest"), tgbotapi.NewKeyboardButton("/change_group")},
+			{tgbotapi.NewKeyboardButton("Сегодня"), tgbotapi.NewKeyboardButton("Завтра")}, {tgbotapi.NewKeyboardButton("Расписание"), tgbotapi.NewKeyboardButton("Преподы")},
+			{tgbotapi.NewKeyboardButton("Предложить"), tgbotapi.NewKeyboardButton("Сменить подгруппу")},
 		}
 	}
 	return tgbotapi.NewReplyKeyboard(buttons...)
