@@ -162,6 +162,13 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 
 	text := strings.ToLower(update.Message.Text)
+	for ruText, enText := range keyboards.Commands {
+		if text == strings.ToLower(ruText) {
+			text = enText
+			break
+		}
+	}
+
 	today := int(time.Now().Weekday()) // 0=Sunday, 1=Monday
 	if today == 0 {
 		today = 7
@@ -198,6 +205,19 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		} else {
 			msg.Text = "Выберите день недели:"
 			msg.ReplyMarkup = keyboards.CreateDaySelectionKeyboard()
+		}
+
+	case strings.HasPrefix(text, "/tomorrow"):
+		// Format /tomorrow
+		day := today + 1
+		if day > 7 {
+			day = 1
+		}
+		items, err := db.GetScheduleForDay(day, user.Subgroup)
+		if err != nil {
+			msg.Text = "Не получилось получить расписание."
+		} else {
+			msg.Text = sprintSchedule(day, items)
 		}
 
 	case strings.HasPrefix(text, "/change_group"):
