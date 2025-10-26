@@ -14,6 +14,7 @@ var cronRef *cron.Cron
 
 func InitCron(c *cron.Cron, bot *tgbotapi.BotAPI) error {
 	cronRef = c
+	defer cronRef.Start()
 	return scheduleMessages(cronRef, bot)
 }
 
@@ -22,7 +23,11 @@ func scheduleMessages(c *cron.Cron, bot *tgbotapi.BotAPI) error {
 	if err == nil {
 		for _, m := range messages {
 			cronSpec, msg, subgroup := m.CronSpec, m.Message, m.Subgroup
-			c.AddFunc(cronSpec, func() { sendScheduledMessages(bot, msg, subgroup) })
+			c.AddFunc(cronSpec, func() {
+				log.Println("Sending...")
+				sendScheduledMessages(bot, msg, subgroup)
+				log.Println("Sended")
+			})
 		}
 	}
 
@@ -30,7 +35,11 @@ func scheduleMessages(c *cron.Cron, bot *tgbotapi.BotAPI) error {
 }
 
 func addScheduledMessage(bot *tgbotapi.BotAPI, spec string, message string, subgroup int) error {
-	cronEntryID, err := cronRef.AddFunc(spec, func() { sendScheduledMessages(bot, message, subgroup) })
+	cronEntryID, err := cronRef.AddFunc(spec, func() {
+		log.Println("Sending...")
+		sendScheduledMessages(bot, message, subgroup)
+		log.Println("Sended")
+	})
 	log.Printf("cron entry id: %v\n", cronEntryID)
 	if err != nil {
 		return err
@@ -42,10 +51,13 @@ func addScheduledMessage(bot *tgbotapi.BotAPI, spec string, message string, subg
 func convertTimeToCronSpec(day, pairNumber int) string {
 	pairTime := []string{"", "8:30", "10:10", "11:50", "13:50", "15:30", "17:10", "18:50"}
 	arr := strings.Split(pairTime[pairNumber], ":")
-	hours, minutes := arr[0], arr[1]
-	weekday := day - 1
+	weekday, hours, minutes := 0, arr[0], arr[1]
 
-	return fmt.Sprintf("* %s %s * * %d", minutes, hours, weekday)
+	if day != 7 {
+		weekday = day
+	}
+
+	return fmt.Sprintf("0 %s %s * * %d", minutes, hours, weekday)
 }
 
 func sendScheduledMessages(bot *tgbotapi.BotAPI, message string, subgroup int) {
