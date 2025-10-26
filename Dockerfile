@@ -11,7 +11,11 @@ RUN go build -o application .
 
 FROM ubuntu:latest
 
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    tzdata \
+ && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /app
 
@@ -22,6 +26,7 @@ ENV DB_HOST = \
     DB_PASSWORD= \ 
     DB_NAME= \
     SSL_MODE= \
-    TOKEN=
+    TOKEN= \
+    LOCATION = 
 
 CMD ["./application"]

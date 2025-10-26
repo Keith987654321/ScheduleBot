@@ -3,10 +3,12 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/Keith987654321/schedule-tg-bot/bot"
 	"github.com/Keith987654321/schedule-tg-bot/db"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/robfig/cron/v3"
 )
 
 func main() {
@@ -17,6 +19,7 @@ func main() {
 	port := os.Getenv("DB_PORT")
 	ssl := os.Getenv("SSL_MODE")
 	token := os.Getenv("TOKEN")
+	location := os.Getenv("LOCATION")
 
 	db.Connect(username, host, port, pass, name, ssl)
 
@@ -28,6 +31,16 @@ func main() {
 	botAPI.Debug = true
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
+
+	loc, err := time.LoadLocation(location)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	c := cron.New(cron.WithLocation(loc), cron.WithSeconds())
+	if err := bot.InitCron(c, botAPI); err != nil {
+		log.Panic(err)
+	}
 
 	updates := botAPI.GetUpdatesChan(u)
 
