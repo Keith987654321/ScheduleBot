@@ -187,7 +187,6 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	case strings.HasPrefix(text, "/schedule"):
 		// Format: /schedule [day]
 		parts := strings.SplitN(text, " ", 2)
-		day := today
 		if len(parts) == 2 {
 			parsedDay, err := strconv.Atoi(parts[1])
 			if err != nil || parsedDay < 1 || parsedDay > 7 {
@@ -195,7 +194,7 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 				bot.Send(msg)
 				return
 			}
-			day = parsedDay
+			day := parsedDay
 			items, err := db.GetScheduleForDay(day, user.Subgroup)
 			if err != nil {
 				msg.Text = "Не получилось получить расписание."
@@ -249,9 +248,9 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}
 
 	case strings.HasPrefix(text, "/suggest") && (user.Role == "user" || user.Role == "admin"):
-		err, item := parseSuggestion(text)
+		item, err := parseSuggestion(text)
 		if err != nil {
-			msg.Text = handleParseErrors(err)
+			msg.Text = handleParseErrors(err, "suggest")
 			bot.Send(msg)
 			return
 		}
@@ -264,9 +263,9 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}
 
 	case strings.HasPrefix(text, "/edit") && user.Role == "admin":
-		err, item := parseSuggestion(text)
+		item, err := parseSuggestion(text)
 		if err != nil {
-			msg.Text = handleParseErrors(err)
+			msg.Text = handleParseErrors(err, "edit")
 			bot.Send(msg)
 			return
 		}
@@ -396,6 +395,81 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			msg.Text = "Предложение отклонено."
 		}
 
+	case strings.HasPrefix(text, "/schedmes") && user.Role == "admin":
+		// Format: /schedmes \<message>\<day>\<pair number>\<subgroup>
+		var err error
+		var message string
+		var schedDay, pairNumber, subgroup int
+		parts := strings.SplitN(text, "\\", 5)
+		if len(parts) >= 4 {
+			message = parts[1]
+			if schedDay, err = strconv.Atoi(parts[2]); err != nil || schedDay < 1 || schedDay > 7 {
+				msg.Text = "Номер дня должен быть от 1 до 7"
+				bot.Send(msg)
+				return
+			}
+			if pairNumber, err = strconv.Atoi(parts[3]); err != nil || pairNumber < 1 || pairNumber > 7 {
+				msg.Text = "Номер пары должен быть от 1 до 7"
+				bot.Send(msg)
+				return
+			}
+			if len(parts) == 5 {
+				subgroup, err = strconv.Atoi(parts[4])
+				if err != nil || !(keyboards.Subgroups[0] <= subgroup && keyboards.Subgroups[len(keyboards.Subgroups)-1] <= subgroup) {
+					msg.Text = "Введена некорректная подгруппа"
+					bot.Send(msg)
+					return
+				}
+			}
+			crocSpec := convertTimeToCronSpec(schedDay, pairNumber)
+			if err = addScheduledMessage(bot, crocSpec, message, subgroup); err != nil {
+				msg.Text = fmt.Sprintf("Не удалось запланировать отложенное сообщение: %v", err)
+			} else {
+				msg.Text = "Отложенное сообщение успешно добавлено"
+			}
+			bot.Send(msg)
+			return
+
+		} else {
+			msg.Text = "Неправильно введённые данные\nFormat: /schedmes \\<message>\\<day>\\<pair number>\\<subgroup=0>"
+			bot.Send(msg)
+			return
+		}
+
+	case strings.HasPrefix(text, "/showschedmes") && user.Role == "admin":
+		items, err := db.GetScheduledMessages()
+		if err != nil {
+			msg.Text = fmt.Sprintf("Can't get scheduled messages: %v\n", err)
+			bot.Send(msg)
+			return
+		}
+
+		if len(items) == 0 {
+			msg.Text = "Пока что нет запланированных сообщений"
+			bot.Send(msg)
+			return
+		}
+		msg.Text = "Запланированные сообщения:"
+		bot.Send(msg)
+		for _, item := range items {
+			msg.Text = fmt.Sprintf("msg: %s\nsubgroup: %d\nId: %d\ncron spec: %s\nentryID: %v", item.Message, item.Subgroup, item.ID, item.CronSpec, item.CronEntryID)
+			bot.Send(msg)
+		}
+		return
+	case strings.HasPrefix(text, "/delschedmes_") && user.Role == "admin":
+		schedmesID, err := strconv.Atoi(strings.TrimPrefix(text, "/delschedmes_"))
+		if err != nil {
+			msg.Text = "Invalid scheduled message id"
+			bot.Send(msg)
+			return
+		}
+		err = deleteScheduledMessage(schedmesID)
+		if err != nil {
+			msg.Text = fmt.Sprint(err)
+		} else {
+			msg.Text = fmt.Sprintf("Сообщение с id: %d успешно удаленно", schedmesID)
+		}
+
 	default:
 		if user.Role == "user" {
 			msg.Text = "Команды:\nПосмотреть расписание на определенный день недели /schedule\n\n" +
@@ -406,7 +480,8 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			msg.Text = "Команды:\n/schedule <день 1-7>\n\n/suggest <день 1-7  пара 1-8  премдет (1 словом)  аудитория  подгруппа>\n" +
 				"Поменять подгруппу /change_group\n\nПосмотреть список преподавателей /teachers\n\n" +
 				"/edit <день 1-7  пара 1-8  предмет  аудитория  подгруппа>\n/approve <id>\n/reject <id>\n/clear_suggestions <status_to_clear>\n" +
-				"/delete <day  pair subgroup>\n"
+				"/delete <day  pair subgroup>\n/schedmes \\<message>\\<day>\\<pair number>\\<subgroup=0>\n" +
+				"Посмотреть все запланированные сообщения /showschedmes\nУдалить запланированное сообщение /delschedmes_<id>\n"
 		}
 
 	}
@@ -463,7 +538,7 @@ func sprintTeachers(teachers []models.Teacher) string {
 	return sb.String()
 }
 
-func parseSuggestion(text string) (error, *models.ScheduleItem) {
+func parseSuggestion(text string) (*models.ScheduleItem, error) {
 	// Format: /edit <day> <pair> <new_subject> <classroom> <subgroup>
 	parts := strings.SplitN(text, " ", 6)
 	var subgroup int
@@ -472,52 +547,52 @@ func parseSuggestion(text string) (error, *models.ScheduleItem) {
 	if len(parts) == 6 {
 		subgroup, err = strconv.Atoi(parts[5])
 		if err != nil {
-			return errors.New("Invalid subgroup"), nil
+			return nil, errors.New("invalid subgroup")
 		}
 		fmt.Printf("subgroup == %d\n\n", subgroup)
 	}
 	if len(parts) < 5 {
-		return errors.New("Invalid format"), nil
+		return nil, errors.New("invalid format")
 	}
 	day, err := strconv.Atoi(parts[1])
 	if err != nil || day < 1 || day > 7 {
-		return errors.New("Invalid day"), nil
+		return nil, errors.New("invalid day")
 	}
 	pair, err := strconv.Atoi(parts[2])
 	if err != nil || pair < 1 || pair > 8 {
-		return errors.New("Invalid pair number"), nil
+		return nil, errors.New("invalid pair number")
 	}
 	newSub := utils.CapitalizeFirstLetter(parts[3])
 	classroom, err := strconv.Atoi(parts[4])
 	if err != nil {
-		return errors.New("Invalid classroom"), nil
+		return nil, errors.New("invalid classroom")
 	}
 
-	return nil, &models.ScheduleItem{
+	return &models.ScheduleItem{
 		ID:         -1,
 		DayOfWeek:  day,
 		PairNumber: pair,
 		Classroom:  classroom,
 		Subject:    newSub,
 		Subgroup:   subgroup,
-	}
+	}, nil
 }
 
-func handleParseErrors(err error) string {
+func handleParseErrors(err error, funcName string) string {
 	switch err.Error() {
-	case "Invalid format":
-		return "Формат: /suggest день(1-7)  пара  новый_предмет(одним словом)  аудитория  подгруппа(если для конкретной подгруппы)"
+	case "invalid format":
+		return fmt.Sprintf("Формат: /%s день(1-7)  пара  новый_предмет(одним словом)  аудитория  подгруппа(если для конкретной подгруппы)", funcName)
 
-	case "Invalid day":
+	case "invalid day":
 		return "День должен быть от 1 до 7."
 
-	case "Invalid pair number":
+	case "invalid pair number":
 		return "Номер пары должен быть от 1 до 8."
 
-	case "Invalid classroom":
+	case "invalid classroom":
 		return "Введите валидный номер аудитории."
 
-	case "Invalid subgroup":
+	case "invalid subgroup":
 		return "Введите правильный номер подгруппы."
 
 	default:
