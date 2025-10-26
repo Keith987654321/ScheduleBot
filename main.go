@@ -43,7 +43,7 @@ func main() {
 	if err := bot.InitCron(c, botAPI); err != nil {
 		log.Panic(err)
 	}
-
+	defer c.Stop()
 	//
 
 	updates := botAPI.GetUpdatesChan(u)
