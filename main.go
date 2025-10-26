@@ -32,6 +32,8 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
+	// Cron setup
+
 	loc, err := time.LoadLocation(location)
 	if err != nil {
 		log.Panic(err)
@@ -41,6 +43,8 @@ func main() {
 	if err := bot.InitCron(c, botAPI); err != nil {
 		log.Panic(err)
 	}
+
+	//
 
 	updates := botAPI.GetUpdatesChan(u)
 
