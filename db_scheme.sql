@@ -2,15 +2,14 @@
 -- PostgreSQL database dump
 --
 
-\restrict oahdIjKeVDcI3TpuRjYRBIZ3EmMZMGyrRxzAd5MPAh2eOePyxQ1gtb2egTRXfkz
+\restrict z5d50fPNx13Ens1suK5wwP9sOZGoEMmF0Q01EQSis2FD3rxF0Z9eKbYuhsAVK9I
 
--- Dumped from database version 17.6 (Debian 17.6-1.pgdg13+1)
--- Dumped by pg_dump version 17.6 (Debian 17.6-1.pgdg13+1)
+-- Dumped from database version 15.14 (Debian 15.14-1.pgdg13+1)
+-- Dumped by pg_dump version 15.14 (Debian 15.14-1.pgdg13+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -19,12 +18,28 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: db_scheme; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA db_scheme;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: schedule; Type: TABLE; Schema: public; Owner: postgres
+-- Name: demo; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.demo (
+    cmd_output text
+);
+
+
+--
+-- Name: schedule; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.schedule (
@@ -40,10 +55,8 @@ CREATE TABLE public.schedule (
 );
 
 
-ALTER TABLE public.schedule OWNER TO postgres;
-
 --
--- Name: schedule_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: schedule_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.schedule_id_seq
@@ -55,17 +68,47 @@ CREATE SEQUENCE public.schedule_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.schedule_id_seq OWNER TO postgres;
-
 --
--- Name: schedule_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: schedule_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.schedule_id_seq OWNED BY public.schedule.id;
 
 
 --
--- Name: suggestions; Type: TABLE; Schema: public; Owner: postgres
+-- Name: scheduledmessages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.scheduledmessages (
+    id integer NOT NULL,
+    cron_spec character varying(24) NOT NULL,
+    message character varying(255) NOT NULL,
+    subgroup integer DEFAULT 0
+);
+
+
+--
+-- Name: scheduledmessages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.scheduledmessages_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: scheduledmessages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.scheduledmessages_id_seq OWNED BY public.scheduledmessages.id;
+
+
+--
+-- Name: suggestions; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.suggestions (
@@ -83,10 +126,8 @@ CREATE TABLE public.suggestions (
 );
 
 
-ALTER TABLE public.suggestions OWNER TO postgres;
-
 --
--- Name: suggestions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: suggestions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.suggestions_id_seq
@@ -98,17 +139,15 @@ CREATE SEQUENCE public.suggestions_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.suggestions_id_seq OWNER TO postgres;
-
 --
--- Name: suggestions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: suggestions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.suggestions_id_seq OWNED BY public.suggestions.id;
 
 
 --
--- Name: teachers; Type: TABLE; Schema: public; Owner: postgres
+-- Name: teachers; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.teachers (
@@ -122,10 +161,8 @@ CREATE TABLE public.teachers (
 );
 
 
-ALTER TABLE public.teachers OWNER TO postgres;
-
 --
--- Name: teachers_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: teachers_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.teachers_id_seq
@@ -137,17 +174,15 @@ CREATE SEQUENCE public.teachers_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.teachers_id_seq OWNER TO postgres;
-
 --
--- Name: teachers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: teachers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.teachers_id_seq OWNED BY public.teachers.id;
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: postgres
+-- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.users (
@@ -161,10 +196,8 @@ CREATE TABLE public.users (
 );
 
 
-ALTER TABLE public.users OWNER TO postgres;
-
 --
--- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.users_id_seq
@@ -176,45 +209,50 @@ CREATE SEQUENCE public.users_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.users_id_seq OWNER TO postgres;
-
 --
--- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
--- Name: schedule id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: schedule id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schedule ALTER COLUMN id SET DEFAULT nextval('public.schedule_id_seq'::regclass);
 
 
 --
--- Name: suggestions id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: scheduledmessages id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scheduledmessages ALTER COLUMN id SET DEFAULT nextval('public.scheduledmessages_id_seq'::regclass);
+
+
+--
+-- Name: suggestions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.suggestions ALTER COLUMN id SET DEFAULT nextval('public.suggestions_id_seq'::regclass);
 
 
 --
--- Name: teachers id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: teachers id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.teachers ALTER COLUMN id SET DEFAULT nextval('public.teachers_id_seq'::regclass);
 
 
 --
--- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
 
 --
--- Name: schedule schedule_day_pair_subgroup_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: schedule schedule_day_pair_subgroup_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schedule
@@ -222,7 +260,7 @@ ALTER TABLE ONLY public.schedule
 
 
 --
--- Name: schedule schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: schedule schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schedule
@@ -230,7 +268,15 @@ ALTER TABLE ONLY public.schedule
 
 
 --
--- Name: suggestions suggestions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: scheduledmessages scheduledmessages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scheduledmessages
+    ADD CONSTRAINT scheduledmessages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: suggestions suggestions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.suggestions
@@ -238,7 +284,7 @@ ALTER TABLE ONLY public.suggestions
 
 
 --
--- Name: teachers teachers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: teachers teachers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.teachers
@@ -246,7 +292,7 @@ ALTER TABLE ONLY public.teachers
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
@@ -254,7 +300,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: users users_telegram_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: users users_telegram_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
@@ -262,7 +308,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: suggestions suggestions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: suggestions suggestions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.suggestions
@@ -273,5 +319,5 @@ ALTER TABLE ONLY public.suggestions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict oahdIjKeVDcI3TpuRjYRBIZ3EmMZMGyrRxzAd5MPAh2eOePyxQ1gtb2egTRXfkz
+\unrestrict z5d50fPNx13Ens1suK5wwP9sOZGoEMmF0Q01EQSis2FD3rxF0Z9eKbYuhsAVK9I
 

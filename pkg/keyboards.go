@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	subgroups = [2]int{1, 2}
+	Subgroups = [2]int{1, 2} // In increasing order!!!
 	days      = [6]string{"Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"}
 	Commands  = map[string]string{
 		"Сегодня": "/today", "Завтра": "/tomorrow", "Расписание": "/schedule",
@@ -47,7 +47,7 @@ func CreateDaySelectionKeyboard() tgbotapi.InlineKeyboardMarkup {
 
 func CreateSubgroupSelectionKeyboard() tgbotapi.InlineKeyboardMarkup {
 	var buttons [][]tgbotapi.InlineKeyboardButton
-	for _, subgroup := range subgroups {
+	for _, subgroup := range Subgroups {
 		buttons = append(buttons, []tgbotapi.InlineKeyboardButton{
 			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%d", subgroup), fmt.Sprintf("subgroup_%d", subgroup)),
 		})
@@ -57,7 +57,7 @@ func CreateSubgroupSelectionKeyboard() tgbotapi.InlineKeyboardMarkup {
 
 func CreateChangeSubgroupSelectionKeyboard() tgbotapi.InlineKeyboardMarkup {
 	var buttons [][]tgbotapi.InlineKeyboardButton
-	for _, subgroup := range subgroups {
+	for _, subgroup := range Subgroups {
 		buttons = append(buttons, []tgbotapi.InlineKeyboardButton{
 			tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%d", subgroup), fmt.Sprintf("change_group_%d", subgroup)),
 		})

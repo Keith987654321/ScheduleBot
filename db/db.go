@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	"github.com/Keith987654321/schedule-tg-bot/models"
+	keyboards "github.com/Keith987654321/schedule-tg-bot/pkg"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/robfig/cron/v3"
 )
 
 var DB *sqlx.DB
@@ -32,6 +34,23 @@ func GetUserByTelegramID(telegramID int64) (*models.User, error) {
 		return GetUserByTelegramID(telegramID) // Getting user by recursion
 	}
 	return user, nil
+}
+
+func GetUsersBySubgroup(subgroup int) ([]*models.User, error) {
+	users := []*models.User{}
+	if subgroup != 0 {
+		err := DB.Select(&users, "SELECT * FROM users WHERE subgroup = $1", subgroup)
+		return users, err
+	}
+	temp := []*models.User{}
+	for _, sg := range keyboards.Subgroups {
+		err := DB.Select(&temp, "SELECT * FROM users WHERE subgroup = $1", sg)
+		if err != nil {
+			return users, err
+		}
+		users = append(users, temp...)
+	}
+	return users, nil
 }
 
 func CheckUserInfo(telegramID int64, firstName, userName string) error {
@@ -98,7 +117,7 @@ func UpdateSchedule(sugg models.Suggestion) error {
 		_, err = DB.Exec("INSERT INTO schedule (day_of_week, pair_number, subject, classroom, subgroup) values ($1, $2, $3, $4, $5)", sugg.DayOfWeek, sugg.PairNumber,
 			sugg.NewSubject, sugg.Classroom, sugg.Subgroup)
 	} else {
-		return errors.New("Already exist at this pair time")
+		return errors.New("already exist at this pair time")
 	}
 
 	return err
@@ -165,5 +184,27 @@ func DeleteSubject(day, pair, subgroup int) error {
 
 func ClearSuggestions(status string) error {
 	_, err := DB.Exec("DELETE FROM suggestions WHERE status = $1", status)
+	return err
+}
+
+func GetScheduledMessage(schedmesID int) (models.ScheduledMessage, error) {
+	var item models.ScheduledMessage
+	err := DB.Get(&item, "SELECT * FROM scheduledmessages WHERE id = $1", schedmesID)
+	return item, err
+}
+
+func GetScheduledMessages() ([]models.ScheduledMessage, error) {
+	items := []models.ScheduledMessage{}
+	err := DB.Select(&items, "SELECT * FROM scheduledmessages")
+	return items, err
+}
+
+func AddScheduledMessage(spec string, entryID cron.EntryID, message string, subgroup int) error {
+	_, err := DB.Exec("INSERT INTO scheduledmessages (cron_spec, cron_entry_id, message, subgroup) VALUES ($1, $2, $3, $4)", spec, entryID, message, subgroup)
+	return err
+}
+
+func DeleteScheduledMessage(schedmesID int) error {
+	_, err := DB.Exec("DELETE FROM scheduledmessages WHERE id = $1", schedmesID)
 	return err
 }

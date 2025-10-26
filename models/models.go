@@ -1,5 +1,7 @@
 package models
 
+import "github.com/robfig/cron/v3"
+
 type User struct {
 	ID         int    `db:"id"`
 	TelegramID int64  `db:"telegram_id"`
@@ -36,4 +38,12 @@ type Teacher struct {
 	SecondName string `db:"second_name"`
 	Subject    string `db:"subject"`
 	Subgroup   int    `db:"subgroup"`
+}
+
+type ScheduledMessage struct {
+	ID          int          `db:"id"`
+	CronSpec    string       `db:"cron_spec"`
+	CronEntryID cron.EntryID `db:"cron_entry_id"`
+	Message     string       `db:"message"`
+	Subgroup    int          `db:"subgroup"`
 }
