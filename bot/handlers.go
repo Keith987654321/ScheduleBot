@@ -444,17 +444,8 @@ func HandleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			return
 		}
 
-		if len(items) == 0 {
-			msg.Text = "Пока что нет запланированных сообщений"
-			bot.Send(msg)
-			return
-		}
-		msg.Text = "Запланированные сообщения:"
+		msg.Text = sprintSchedmes(items)
 		bot.Send(msg)
-		for _, item := range items {
-			msg.Text = fmt.Sprintf("msg: %s\nsubgroup: %d\nId: %d\ncron spec: %s\nentryID: %v", item.Message, item.Subgroup, item.ID, item.CronSpec, item.CronEntryID)
-			bot.Send(msg)
-		}
 		return
 	case strings.HasPrefix(text, "/delschedmes_") && user.Role == "admin":
 		schedmesID, err := strconv.Atoi(strings.TrimPrefix(text, "/delschedmes_"))
@@ -512,6 +503,18 @@ func sprintSchedule(day int, items []models.ScheduleItem) string {
 
 			lastPairNumber = item.PairNumber
 		}
+	}
+	return sb.String()
+}
+
+func sprintSchedmes(items []models.ScheduledMessage) string {
+	if len(items) == 0 {
+		return "Нет запланированных сообщений"
+	}
+	var sb strings.Builder
+	sb.WriteString("Запланированные сообщения:\n")
+	for i, item := range items {
+		sb.WriteString(fmt.Sprintf("%d) msg: %s\nsubgroup: %d\nId: %d\ncron spec: %s\nentryID: %v\n\n", i+1, item.Message, item.Subgroup, item.ID, item.CronSpec, item.CronEntryID))
 	}
 	return sb.String()
 }
