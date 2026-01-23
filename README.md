@@ -1,4 +1,33 @@
 # Schedule bot
+Schedule bot - a bot for viewing and managing schedules.
+
+## Requirements
+- Go (version 1.24 or higher)
+- PostgreSQL (version 17.6 or compatible)
+- Docker (optional, for running the database)
+- Docker compose
+
+## Installation and Launch
+1. Using @BotFather in Telegram, create and copy a token for the bot.
+
+2. In the .env file, paste your bot's token into the TOKEN environment variable.
+
+3. Build and run the Docker container.
+- docker compose up --build or docker compose up --build -d, where -d (detached) runs the container in the background.
+
+4. Copy the database schema from the db_scheme.sql file
+- docker exec -i <container_id> psql -U postgres -d postgres < db_scheme.sql
+
+5. Obtain administrator rights.
+- In Telegram, open the bot chat and send any message.
+- docker exec -it <container_id> bash
+- psql -U postgres
+- UPDATE users SET role = 'admin';
+
+6. Add a schedule using the terminal and SQL queries or the Telegram bot interface.
+
+
+# Schedule bot
 Schedule bot - бот для просмотра и управлением расписанием. 
 
 ## Требования
