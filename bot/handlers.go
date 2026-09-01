@@ -487,7 +487,7 @@ func sprintSchedule(day int, items []models.ScheduleItem) string {
 	if len(items) == 0 {
 		sb.WriteString("Расписание пусто.\n")
 	} else {
-		pairTime := []string{"", "8:30 - 10:00", "10:10 - 11:40", "11:50 - 13:20", "13:50 - 15:20", "15:30 - 17:00", "17:10 - 18:40", "18:50 - 20:20", "ggwp"}
+		pairTime := []string{"", "8:30 - 10:00", "10:10 - 11:40", "11:50 - 13:20", "13:50 - 15:20", "15:30 - 17:00", "17:10 - 18:40", "18:50 - 20:20", "20:30-22:00"}
 		var lastPairNumber int
 		for _, item := range items {
 			if item.PairNumber > lastPairNumber+1 {
